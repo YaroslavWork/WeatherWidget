@@ -109,7 +109,7 @@ class App:
         self.UI_display.fill(self.colors['background'])  # Fill background
         self.field.draw(self.UI_display)
 
-        fps_text = f"FPS: {self.clock.get_fps()}" if self.fps != 0 else "FPS: inf"
+        fps_text = f"FPS: {self.clock.get_fps()}"
         Text(fps_text, [0, 0, 0], 20).print(self.UI_display, [self.width - 70, self.height - 21], False)  # FPS counter
         # -*-*-                 -*-*-
 
@@ -123,6 +123,7 @@ class App:
             s.COLORS['background'][1] / 255,
             s.COLORS['background'][2] / 255
         )
+        self.program['resolution'] = (self.width, self.height)
 
         self.render_object.render(moderngl.TRIANGLE_STRIP)
 
