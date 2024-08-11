@@ -29,7 +29,14 @@ vec4 blur(sampler2D sp, vec2 U, vec2 scale) {
 
     for ( int i = 0; i < s*s; i++ ) {
         vec2 d = vec2(i%s, i/s)*float(sLOD) - float(samples)/2.;
-        O += gaussian(d) * textureLod( sp, U + scale * d , float(LOD) );
+        if ( U.x < 0.02 || U.x > 0.98 || U.y < 0.05 || U.y > 0.95 ) {
+            // Just copy the pixel if it's on the edge
+            O += textureLod( sp, U, float(LOD) );
+        }
+        else {
+            O += gaussian(d) * textureLod( sp, U + scale * d , float(LOD) );
+        }
+
     }
 
     return O / O.a;

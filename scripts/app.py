@@ -1,9 +1,11 @@
 import ctypes
+import math
 import os
 import sys
 
 try:
-    import moderngl
+    if os.name == "nt":
+        import moderngl
 except ImportError:
     raise ImportError("Впиши 'pip install moderngl' в консоль")
 import pygame
@@ -37,24 +39,34 @@ class App:
         # Set pygame window
         pygame.display.set_caption(self.name)
 
-        # Set pygame windows
-        self.screen: pygame.Surface = pygame.display.set_mode(self.size, pygame.NOFRAME | pygame.OPENGL | pygame.DOUBLEBUF)
-        self.backgorund_display: pygame.Surface = pygame.Surface(self.size, flags=pygame.SRCALPHA)
-        self.UI_display: pygame.Surface = pygame.Surface(self.size, flags=pygame.SRCALPHA)
-
-        # Set pygame ctx and clock
-        self.ctx = moderngl.create_context()
+        # Set pygame clock
         self.clock: pygame.time.Clock = pygame.time.Clock()
 
         # Set input variables
         self.dt: int = 0
         self.mouse_pos: tuple[int, int] = (0, 0)
         self.keys: list = []
-        self.screen_pos = (0, 0)
         self.is_windowless: bool = True
+
+        self.show_fps: bool = False
 
         # This line takes data from save file
         self.field: Field = Field()
+
+    def update(self) -> None:
+        pass
+
+
+class AppWindows(App):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+        # Set moderngl context
+        self.screen = pygame.display.set_mode(self.size, pygame.OPENGL | pygame.DOUBLEBUF | pygame.NOFRAME)
+        self.backgorund_display = pygame.Surface(self.size, pygame.SRCALPHA)
+        self.UI_display = pygame.Surface(self.size, pygame.SRCALPHA)
+        self.ctx = moderngl.create_context()
 
         # Set shader variables
         self.quad_buffer = self.ctx.buffer(array.array('f', [
@@ -79,7 +91,7 @@ class App:
 
     def screen_pos_in_windows(self):
         """
-        This function returns the position of the window on the screen
+        This function returns the position of the window on the screen (WORK ONLY ON WINDOWS)
         """
         window = pygame.display.get_wm_info()['window']
         rect = RECT()
@@ -111,6 +123,7 @@ class App:
 
             if event.type == pygame.MOUSEBUTTONDOWN:  # If mouse button down...
                 if event.button == 1:  # left click
+                    self.field.update_wallpaper()
                     self.is_windowless = not self.is_windowless
                     if self.is_windowless:
                         self.screen = pygame.display.set_mode(self.size, pygame.NOFRAME | pygame.OPENGL | pygame.DOUBLEBUF)
@@ -139,8 +152,9 @@ class App:
         self.field.draw_wallpaper(self.backgorund_display, self.screen_pos, self.is_windowless)
         self.field.draw(self.UI_display)
 
-        fps_text = f"FPS: {self.clock.get_fps()}"
-        Text(fps_text, [0, 0, 0], 20).print(self.UI_display, [self.width - 70, self.height - 21], False)  # FPS counter
+        if self.show_fps:
+            fps_text = f"FPS: {self.clock.get_fps()}"
+            Text(fps_text, [0, 0, 0], 20).print(self.UI_display, [self.width - 70, self.height - 21], False)  # FPS counter
         # -*-*-                 -*-*-
 
         # -*-*- Shader Block -*-*-
@@ -165,6 +179,65 @@ class App:
 
         frame_tex1.release()
         frame_tex2.release()
+
+        self.dt = self.clock.tick(self.fps)  # Get delta time based on FPS
+        # -*-*-              -*-*-
+
+
+class AppLinux(App):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+        self.screen: pygame.Surface = pygame.display.set_mode(self.size, pygame.NOFRAME)
+
+    def update(self) -> None:
+        """
+        Main update function of the program.
+        This function is called every frame
+        """
+
+        # -*-*- Input Block -*-*-
+        self.mouse_pos = pygame.mouse.get_pos()  # Get mouse position
+
+        for event in pygame.event.get():  # Get all events
+            if event.type == pygame.QUIT:  # If you want to close the program...
+                close()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:  # If mouse button down...
+                if event.button == 1:  # left click
+                    self.is_windowless = not self.is_windowless
+                    if self.is_windowless:
+                        self.screen = pygame.display.set_mode(self.size, pygame.NOFRAME)
+                    else:
+                        self.screen = pygame.display.set_mode(self.size)
+                elif event.button == 3:  # right click...
+                    NotImplementedError("Right click is not implemented yet")
+
+            if event.type == pygame.KEYDOWN:  # If key button down...
+                if event.key == pygame.K_SPACE:
+                    close()
+
+        self.keys = pygame.key.get_pressed()  # Get all keys (pressed or not)
+        if self.keys[pygame.K_LEFT] or self.keys[pygame.K_a]:  # If left arrow or 'a' is pressed...
+            NotImplementedError("This button is not implemented yet")
+        # -*-*-             -*-*-
+
+        # -*-*- Physics Block -*-*-
+        self.field.update()
+        # -*-*-               -*-*-
+
+        # -*-*- Rendering Block -*-*-
+        self.screen.fill(self.colors['background'])  # Fill background
+        self.field.draw(self.screen)
+
+        if self.show_fps:
+            fps_text = f"FPS: {int(self.clock.get_fps())}" if self.clock.get_fps() != math.inf else "FPS: inf"
+            Text(fps_text, [0, 0, 0], 20).print(self.screen, [self.width - 70, self.height - 21], False)  # FPS counter
+        # -*-*-                 -*-*-
+
+        # -*-*- Update Block -*-*-
+        pygame.display.update()  # Update screen
 
         self.dt = self.clock.tick(self.fps)  # Get delta time based on FPS
         # -*-*-              -*-*-

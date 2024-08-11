@@ -63,7 +63,8 @@ class Field:
         self.update_wallpaper()
 
     def update_wallpaper(self) -> None:
-        self.wallpaper = pygame.image.load(get_wallpaper_path())
+        if os.name == "nt":
+            self.wallpaper = pygame.image.load(get_wallpaper_path())
 
     def draw_wallpaper(self, screen: pygame.Surface, screen_pos: tuple[int, int], is_windowless: bool) -> None:
         display_size = get_display_size()
@@ -87,9 +88,13 @@ class Field:
             wallpaper = pygame.transform.scale(self.wallpaper, (window_width, window_height))
 
         screen.blit(wallpaper, (0, 0))  # Draw wallpaper on screen
+        #pygame.draw.rect(screen, (0, 0, 0), (0, 0, SIZE[0], SIZE[1]), 4)
 
     def draw(self, screen: pygame.Surface):
-        pygame.draw.rect(screen, (0, 0, 0), (0, 0, SIZE[0], SIZE[1]), 2)
+        pygame.draw.circle(screen, (255, 230, 0), (SIZE[0]*0.25, SIZE[1] // 2), 50)
+        Text("18°C", (0, 0, 0), 100).print(screen, (SIZE[0] * 0.7 + 3, SIZE[1] // 2 + 8), center=True)
+        Text("18°C", (255, 255, 255), 100).print(screen, (SIZE[0]*0.7, SIZE[1] // 2 + 8), center=True)
+
 
     def update(self) -> None:
         pass
