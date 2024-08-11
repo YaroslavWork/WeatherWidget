@@ -3,6 +3,8 @@ import math
 import os
 import sys
 
+from scripts.animations import timing_functions
+
 try:
     if os.name == "nt":
         import moderngl
@@ -47,6 +49,10 @@ class App:
         self.mouse_pos: tuple[int, int] = (0, 0)
         self.keys: list = []
         self.is_windowless: bool = True
+        self.left_click_pressed: bool = False
+        self.left_click_pressed_time: int = 0
+        self.mouse_outside: bool = False
+        self.mouse_outside_time: int = 0
 
         self.show_fps: bool = False
 
@@ -64,8 +70,10 @@ class AppWindows(App):
 
         # Set moderngl context
         self.screen = pygame.display.set_mode(self.size, pygame.OPENGL | pygame.DOUBLEBUF | pygame.NOFRAME)
-        self.backgorund_display = pygame.Surface(self.size, pygame.SRCALPHA)
+        self.background_display = pygame.Surface(self.size, pygame.SRCALPHA)
         self.UI_display = pygame.Surface(self.size, pygame.SRCALPHA)
+        self.shadow_display = pygame.Surface(self.size, pygame.SRCALPHA)
+        self.buttons_display = pygame.Surface(self.size, pygame.SRCALPHA)
         self.ctx = moderngl.create_context()
 
         # Set shader variables
@@ -116,6 +124,12 @@ class AppWindows(App):
 
         # -*-*- Input Block -*-*-
         self.mouse_pos = pygame.mouse.get_pos()  # Get mouse position
+        mouse_pos_ratio = (self.mouse_pos[0] / self.width, self.mouse_pos[1] / self.height)
+        if mouse_pos_ratio[0] <= 0 or mouse_pos_ratio[0] >= 0.997 or mouse_pos_ratio[1] <= 0 or mouse_pos_ratio[1] >= 0.992:
+            self.mouse_outside = True
+        else:
+            self.mouse_outside = False
+            self.mouse_outside_time = 0
 
         for event in pygame.event.get():  # Get all events
             if event.type == pygame.QUIT:  # If you want to close the program...
@@ -123,6 +137,7 @@ class AppWindows(App):
 
             if event.type == pygame.MOUSEBUTTONDOWN:  # If mouse button down...
                 if event.button == 1:  # left click
+                    self.left_click_pressed = True
                     self.field.update_wallpaper()
                     self.is_windowless = not self.is_windowless
                     if self.is_windowless:
@@ -131,10 +146,16 @@ class AppWindows(App):
                         self.screen = pygame.display.set_mode(self.size, pygame.OPENGL | pygame.DOUBLEBUF)
                 elif event.button == 3:  # right click...
                     NotImplementedError("Right click is not implemented yet")
+            if event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:
+                    self.left_click_pressed = False
+                    self.left_click_pressed_time = 0
 
             if event.type == pygame.KEYDOWN:  # If key button down...
                 if event.key == pygame.K_SPACE:
                     close()
+                if event.key == pygame.K_f:
+                    self.show_fps = not self.show_fps
 
         self.keys = pygame.key.get_pressed()  # Get all keys (pressed or not)
         if self.keys[pygame.K_LEFT] or self.keys[pygame.K_a]:  # If left arrow or 'a' is pressed...
@@ -144,13 +165,21 @@ class AppWindows(App):
         # -*-*- Physics Block -*-*-
         self.screen_pos_in_windows()
         self.field.update()
+        if self.left_click_pressed:
+            self.left_click_pressed_time += self.dt
+        if self.mouse_outside:
+            self.mouse_outside_time += self.dt
         # -*-*-               -*-*-
 
         # -*-*- Rendering Block -*-*-
-        self.backgorund_display.fill(self.colors['background'])  # Fill background
-        self.UI_display.fill((0, 0, 0, 0))  # Fill UI
-        self.field.draw_wallpaper(self.backgorund_display, self.screen_pos, self.is_windowless)
-        self.field.draw(self.UI_display)
+        self.background_display.fill(self.colors['background'])  # Fill background
+        self.UI_display.fill((0, 0, 0, 0))
+        self.buttons_display.fill((0, 0, 0, 0))
+        self.shadow_display.fill((0, 0, 0, 0))
+
+        self.field.draw_wallpaper(self.background_display, self.screen_pos, self.is_windowless)
+        self.field.draw(self.UI_display, self.shadow_display)
+        self.field.button_draw(self.buttons_display)
 
         if self.show_fps:
             fps_text = f"FPS: {self.clock.get_fps()}"
@@ -158,19 +187,27 @@ class AppWindows(App):
         # -*-*-                 -*-*-
 
         # -*-*- Shader Block -*-*-
-        frame_tex1 = self.surf_to_texture(self.backgorund_display)
+        frame_tex1 = self.surf_to_texture(self.background_display)
         frame_tex2 = self.surf_to_texture(self.UI_display)
+        frame_tex3 = self.surf_to_texture(self.buttons_display)
+        frame_tex4 = self.surf_to_texture(self.shadow_display)
 
         frame_tex1.use(1)
         self.program['backgroundTex'] = 1
         frame_tex2.use(2)
         self.program['uiTex'] = 2
+        frame_tex3.use(3)
+        self.program['buttonsTex'] = 3
+        frame_tex4.use(4)
+        self.program['shadowTex'] = 4
         self.program['backgroundColor'] = (
             s.COLORS['background'][0] / 255,
             s.COLORS['background'][1] / 255,
             s.COLORS['background'][2] / 255
         )
         self.program['resolution'] = (self.width, self.height)
+        self.program['mousePos'] = mouse_pos_ratio
+        self.program['mouseOutsideTime'] = self.mouse_outside_time / 1000
 
         self.render_object.render(moderngl.TRIANGLE_STRIP)
 
@@ -179,6 +216,8 @@ class AppWindows(App):
 
         frame_tex1.release()
         frame_tex2.release()
+        frame_tex3.release()
+        frame_tex4.release()
 
         self.dt = self.clock.tick(self.fps)  # Get delta time based on FPS
         # -*-*-              -*-*-
@@ -217,6 +256,8 @@ class AppLinux(App):
             if event.type == pygame.KEYDOWN:  # If key button down...
                 if event.key == pygame.K_SPACE:
                     close()
+                if event.key == pygame.K_f:
+                    self.show_fps = not self.show_fps
 
         self.keys = pygame.key.get_pressed()  # Get all keys (pressed or not)
         if self.keys[pygame.K_LEFT] or self.keys[pygame.K_a]:  # If left arrow or 'a' is pressed...
@@ -230,6 +271,7 @@ class AppLinux(App):
         # -*-*- Rendering Block -*-*-
         self.screen.fill(self.colors['background'])  # Fill background
         self.field.draw(self.screen)
+        self.field.button_draw(self.screen)
 
         if self.show_fps:
             fps_text = f"FPS: {int(self.clock.get_fps())}" if self.clock.get_fps() != math.inf else "FPS: inf"

@@ -3,6 +3,7 @@ import subprocess
 import pygame.draw
 
 from scripts import settings
+from scripts.UI.side_buttons import SideButton
 from scripts.UI.text import Text
 from scripts.settings import SIZE
 
@@ -62,6 +63,13 @@ class Field:
         self.wallpaper = None
         self.update_wallpaper()
 
+        self.left_button = SideButton(0, 60, 20, (SIZE[0] * 0.05, SIZE[1] // 2))
+        self.left_button.create()
+        self.right_button = SideButton(180, 60, 20, (SIZE[0] * 0.95, SIZE[1] // 2))
+        self.right_button.create()
+        self.bottom_button = SideButton(90, 80, 30, (SIZE[0] // 2, SIZE[1] * 0.85))
+        self.bottom_button.create()
+
     def update_wallpaper(self) -> None:
         if os.name == "nt":
             self.wallpaper = pygame.image.load(get_wallpaper_path())
@@ -90,10 +98,16 @@ class Field:
         screen.blit(wallpaper, (0, 0))  # Draw wallpaper on screen
         #pygame.draw.rect(screen, (0, 0, 0), (0, 0, SIZE[0], SIZE[1]), 4)
 
-    def draw(self, screen: pygame.Surface):
-        pygame.draw.circle(screen, (255, 230, 0), (SIZE[0]*0.25, SIZE[1] // 2), 50)
-        Text("18°C", (0, 0, 0), 100).print(screen, (SIZE[0] * 0.7 + 3, SIZE[1] // 2 + 8), center=True)
-        Text("18°C", (255, 255, 255), 100).print(screen, (SIZE[0]*0.7, SIZE[1] // 2 + 8), center=True)
+
+    def draw(self, screen: pygame.Surface, shadow_screen: pygame.Surface) -> None:
+        pygame.draw.circle(screen, (255, 230, 0), (SIZE[0]*0.28, SIZE[1] // 2), 50)
+        Text("18°C", (0, 0, 0), 100).print(shadow_screen, (SIZE[0] * 0.66 + 3, SIZE[1] // 2 + 9), center=True)
+        Text("18°C", (255, 255, 255), 100).print(screen, (SIZE[0]*0.66, SIZE[1] // 2 + 8), center=True)
+
+    def button_draw(self, screen: pygame.Surface):
+        self.left_button.draw(screen, (255, 255, 255))
+        self.right_button.draw(screen, (255, 255, 255))
+        self.bottom_button.draw(screen, (255, 255, 255))
 
 
     def update(self) -> None:
