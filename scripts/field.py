@@ -1,3 +1,5 @@
+import subprocess
+
 import pygame.draw
 
 from scripts import settings
@@ -8,19 +10,50 @@ import ctypes
 import os
 
 def get_wallpaper_path() -> str:
-    if os.name != "nt":  # If we are not on Windows, we can't get the path to the wallpaper
-        return ""
-    SPI_GETDESKWALLPAPER = 0x0073
-    buffer = ctypes.create_unicode_buffer(260)  # Maksymalna długość ścieżki to 260 znaków
-    ctypes.windll.user32.SystemParametersInfoW(SPI_GETDESKWALLPAPER, len(buffer), buffer, 0)
+    if os.name == "nt":  # If we are not on Windows, we can't get the path to the wallpaper
+        SPI_GETDESKWALLPAPER = 0x0073
+        buffer = ctypes.create_unicode_buffer(260)  # Maksymalna długość ścieżki to 260 znaków
+        ctypes.windll.user32.SystemParametersInfoW(SPI_GETDESKWALLPAPER, len(buffer), buffer, 0)
+        return buffer.value
+    elif os.name == "posix":  # macOS (i ewentualnie Linux)
+        try:
+            if subprocess.run(['uname'], capture_output=True, text=True).stdout.strip() == "Darwin":
+                script = """
+                    tell application "System Events"
+                        tell current desktop
+                            set wallpaperPath to picture as text
+                        end tell
+                    end tell
+                    """
+                result = subprocess.run(
+                    ['osascript', '-e', script],
+                    capture_output=True, text=True
+                )
+                if result.returncode == 0:
+                    return result.stdout.strip().replace(":", "/").replace("Macintosh HD", "")
+        except Exception as e:
+            return f"Error retrieving wallpaper path on macOS: {e}"
 
-    return buffer.value
+    return ""  # If the OS is neither Windows nor macOS or in case of an error
 
 def get_display_size():
     """
-    This function returns the size of the display windows11
+    This function returns the size of the display (width, height)
     """
-    return (ctypes.windll.user32.GetSystemMetrics(0), ctypes.windll.user32.GetSystemMetrics(1))
+    if os.name == "nt":  # Windows
+        return (ctypes.windll.user32.GetSystemMetrics(0), ctypes.windll.user32.GetSystemMetrics(1))
+    elif os.name == "posix":  # macOS (i ewentualnie Linux)
+        try:
+            if subprocess.run(['uname'], capture_output=True, text=True).stdout.strip() == "Darwin":
+                import Quartz
+                main_monitor = Quartz.CGDisplayBounds(Quartz.CGMainDisplayID())
+                width = int(main_monitor.size.width)
+                height = int(main_monitor.size.height)
+                return (width, height)
+        except Exception as e:
+            return f"Error retrieving display size on macOS: {e}"
+
+    return (0, 0)  # If the OS is neither Windows nor macOS or in case of an error
 
 
 class Field:
