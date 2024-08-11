@@ -1,5 +1,6 @@
 #version 330 core
 
+uniform sampler2D backgroundTex;
 uniform sampler2D uiTex;
 
 //uniform float time;
@@ -14,7 +15,7 @@ in vec2 uvs;
 out vec4 color;
 
 const int samples = 15,
-            LOD = 2,
+            LOD = 1,
             sLOD = 1 << LOD;
 const float sigma = float(samples) * .25;
 
@@ -36,17 +37,16 @@ vec4 blur(sampler2D sp, vec2 U, vec2 scale) {
 
 void main() {
     // Getting colors from textures
-    vec4 color1 = texture(uiTex, uvs);
-    color1 = blur(uiTex, uvs, 1./resolution);
-    //vec4 color2 = texture(uiTex, uvs);
+    vec4 color1 = blur(backgroundTex, uvs, 1./resolution);
+    vec4 color2 = texture(uiTex, uvs);
 
     // Layering textures with alpha blending
-    //color = mix(color1, color2, color2.a);
+    color = mix(color1, color2, color2.a);
     // if we have next texture ex. color3, we can layer it like this:
     // color = mix(color, color3, color3.a);
 
     // Adding background color
-    color = mix(color1, vec4(backgroundColor, 1.0), 1.0 - color1.a);
+    color = mix(color, vec4(backgroundColor, 1.0), 1.0 - color1.a);
 }
 
 

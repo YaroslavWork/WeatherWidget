@@ -1,3 +1,5 @@
+import ctypes
+import os
 import sys
 
 try:
@@ -10,6 +12,15 @@ import array
 import scripts.settings as s
 from scripts.field import Field
 from scripts.UI.text import Text
+
+
+class RECT(ctypes.Structure):
+    _fields_ = [
+        ('left', ctypes.c_long),
+        ('top', ctypes.c_long),
+        ('right', ctypes.c_long),
+        ('bottom', ctypes.c_long)
+    ]
 
 
 class App:
@@ -28,6 +39,7 @@ class App:
 
         # Set pygame windows
         self.screen: pygame.Surface = pygame.display.set_mode(self.size, pygame.NOFRAME | pygame.OPENGL | pygame.DOUBLEBUF)
+        self.backgorund_display: pygame.Surface = pygame.Surface(self.size, flags=pygame.SRCALPHA)
         self.UI_display: pygame.Surface = pygame.Surface(self.size, flags=pygame.SRCALPHA)
 
         # Set pygame ctx and clock
@@ -38,6 +50,8 @@ class App:
         self.dt: int = 0
         self.mouse_pos: tuple[int, int] = (0, 0)
         self.keys: list = []
+        self.screen_pos = (0, 0)
+        self.is_windowless: bool = True
 
         # This line takes data from save file
         self.field: Field = Field()
@@ -62,6 +76,15 @@ class App:
             self.program,
             [(self.quad_buffer, '2f 2f', 'vert', 'texcoord')]
         )
+
+    def screen_pos_in_windows(self):
+        """
+        This function returns the position of the window on the screen
+        """
+        window = pygame.display.get_wm_info()['window']
+        rect = RECT()
+        ctypes.windll.user32.GetWindowRect(window, ctypes.byref(rect))
+        self.screen_pos = (x := rect.left, y := rect.top)
 
     def surf_to_texture(self, surf: pygame.Surface) -> moderngl.Texture:
         """
@@ -88,7 +111,11 @@ class App:
 
             if event.type == pygame.MOUSEBUTTONDOWN:  # If mouse button down...
                 if event.button == 1:  # left click
-                    NotImplementedError("Left click is not implemented yet")
+                    self.is_windowless = not self.is_windowless
+                    if self.is_windowless:
+                        self.screen = pygame.display.set_mode(self.size, pygame.NOFRAME | pygame.OPENGL | pygame.DOUBLEBUF)
+                    else:
+                        self.screen = pygame.display.set_mode(self.size, pygame.OPENGL | pygame.DOUBLEBUF)
                 elif event.button == 3:  # right click...
                     NotImplementedError("Right click is not implemented yet")
 
@@ -102,11 +129,14 @@ class App:
         # -*-*-             -*-*-
 
         # -*-*- Physics Block -*-*-
+        self.screen_pos_in_windows()
         self.field.update()
         # -*-*-               -*-*-
 
         # -*-*- Rendering Block -*-*-
-        self.UI_display.fill(self.colors['background'])  # Fill background
+        self.backgorund_display.fill(self.colors['background'])  # Fill background
+        self.UI_display.fill((0, 0, 0, 0))  # Fill UI
+        self.field.draw_wallpaper(self.backgorund_display, self.screen_pos, self.is_windowless)
         self.field.draw(self.UI_display)
 
         fps_text = f"FPS: {self.clock.get_fps()}"
@@ -114,10 +144,13 @@ class App:
         # -*-*-                 -*-*-
 
         # -*-*- Shader Block -*-*-
-        frame_tex = self.surf_to_texture(self.UI_display)
+        frame_tex1 = self.surf_to_texture(self.backgorund_display)
+        frame_tex2 = self.surf_to_texture(self.UI_display)
 
-        frame_tex.use(1)
-        self.program['uiTex'] = 1
+        frame_tex1.use(1)
+        self.program['backgroundTex'] = 1
+        frame_tex2.use(2)
+        self.program['uiTex'] = 2
         self.program['backgroundColor'] = (
             s.COLORS['background'][0] / 255,
             s.COLORS['background'][1] / 255,
@@ -130,7 +163,8 @@ class App:
         # -*-*- Update Block -*-*-
         pygame.display.flip()  # Update screen
 
-        frame_tex.release()
+        frame_tex1.release()
+        frame_tex2.release()
 
         self.dt = self.clock.tick(self.fps)  # Get delta time based on FPS
         # -*-*-              -*-*-
