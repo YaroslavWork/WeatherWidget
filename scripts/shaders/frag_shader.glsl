@@ -4,6 +4,7 @@ uniform sampler2D backgroundTex;
 uniform sampler2D uiTex;
 uniform sampler2D buttonsTex;
 uniform sampler2D shadowTex;
+uniform sampler2D appShadowTex;
 
 //uniform float time;
 uniform vec3 backgroundColor;
@@ -32,17 +33,31 @@ vec4 blur(sampler2D sp, vec2 U, vec2 scale, int samples, int LOD) {
     vec4 O = vec4(0);
     int s = samples/sLOD;
 
+    // Define the rounded rectangle parameters
+    vec2 rectSize = vec2(0.96, 0.90);  // Size of the rectangle (width, height)
+    vec2 rectPos = vec2(0.02, 0.05);   // Position of the bottom-left corner
+    float radius = 0.;               // Radius of the rounded corners
+
+    // Calculate the distance to the edges, considering the rounded corners
+    vec2 cornerDist = abs(U - (rectPos + rectSize * 0.5)) - (rectSize * 0.5 - vec2(radius));
+
+    // Determine if the pixel is inside the rounded rectangle
+    float inside = step(max(cornerDist.x, cornerDist.y), 0.0) + step(length(max(cornerDist, 0.0)), radius);
+
     for ( int i = 0; i < s*s; i++ ) {
         vec2 d = vec2(i%s, i/s)*float(sLOD) - float(samples)/2.;
-        if ( U.x < 0.02 || U.x > 0.98 || U.y < 0.05 || U.y > 0.95 ) {
+        if (inside < 1.0) {
             // Just copy the pixel if it's on the edge
-            O += textureLod( sp, U, float(LOD) );
+            return textureLod( sp, U, float(LOD) );
         }
         else {
             O += gaussian(d) * textureLod( sp, U + scale * d , float(LOD) );
         }
 
     }
+
+    // Mixing pixel with 15% of white color
+    O = mix(O, vec4(1.0, 1.0, 1.0, 1.0), 0.05);
 
     return O / O.a;
 }
@@ -61,28 +76,38 @@ vec4 mouseDist(sampler2D sp, vec2 U, vec2 mousePos) {
     return vec4(texture(sp, U).rgb, dist);
 }
 
+vec4 blur2(sampler2D sp, vec2 U, float offset, int steps) {
+    float weights[5] = float[](0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
+    vec4 result = vec4(0.0);
+
+    for (int i = 0; i < steps; ++i) {
+        result += texture(sp, U + vec2(0.0, offset * i)) * weights[i];
+        result += texture(sp, U + vec2(0.0, -offset * i)) * weights[i];
+        result += texture(sp, U + vec2(offset * i, 0.0)) * weights[i];
+        result += texture(sp, U + vec2(-offset * i, 0.0)) * weights[i];
+    }
+
+    return result;
+}
+
 
 void main() {
     // Getting colors from textures
     vec4 color1 = blur(backgroundTex, uvs, 1./resolution, 15, 1);
     vec4 color2 = texture(uiTex, uvs);
     vec4 color3 = mouseDist(buttonsTex, uvs, mousePos);
-    float weights[5] = float[](0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
-    vec4 color4 = texture(shadowTex, uvs) * weights[0];
 
-    for (int i = 1; i < 5; ++i) {
-        color4 += texture(shadowTex, uvs + vec2(0.0, 0.003 * i)) * weights[i];
-        color4 += texture(shadowTex, uvs + vec2(0.0, -0.003 * i)) * weights[i];
-        color4 += texture(shadowTex, uvs + vec2(0.003 * i, 0.0)) * weights[i];
-        color4 += texture(shadowTex, uvs + vec2(-0.003 * i, 0.0)) * weights[i];
-    }
-    color4.a = 0.35 * color4.a;
+    vec4 color4 = blur2(shadowTex, uvs, 0.006, 5);
+    color4.a = 0.25 * color4.a;
+    vec4 color5 = texture(appShadowTex, uvs);
+    color5.a = 0.05 * color5.a;
 
     // Layering textures with alpha blending
     color = mix(color1, color4, color4.a);
     // if we have next texture ex. color3, we can layer it like this:
     color = mix(color, color2, color2.a);
     color = mix(color, color3, color3.a);
+    color = mix(color, color5, color5.a);
 
     // Adding background color
     color = mix(color, vec4(backgroundColor, 1.0), 1.0 - color1.a);

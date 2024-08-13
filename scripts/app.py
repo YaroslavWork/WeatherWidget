@@ -74,6 +74,7 @@ class AppWindows(App):
         self.UI_display = pygame.Surface(self.size, pygame.SRCALPHA)
         self.shadow_display = pygame.Surface(self.size, pygame.SRCALPHA)
         self.buttons_display = pygame.Surface(self.size, pygame.SRCALPHA)
+        self.app_shadow_display = pygame.Surface(self.size, pygame.SRCALPHA)
         self.ctx = moderngl.create_context()
 
         # Set shader variables
@@ -176,10 +177,14 @@ class AppWindows(App):
         self.UI_display.fill((0, 0, 0, 0))
         self.buttons_display.fill((0, 0, 0, 0))
         self.shadow_display.fill((0, 0, 0, 0))
+        self.app_shadow_display.fill((0, 0, 0, 0))
 
         self.field.draw_wallpaper(self.background_display, self.screen_pos, self.is_windowless)
         self.field.draw(self.UI_display, self.shadow_display)
         self.field.button_draw(self.buttons_display)
+
+        pygame.draw.line(self.app_shadow_display, (0, 0, 0), [self.width*0.025, self.height*0.96], [self.width*0.985, self.height*0.96], 3)
+        pygame.draw.line(self.app_shadow_display, (0, 0, 0), [self.width*0.985, self.height*0.96], [self.width*0.985, self.height*0.065], 3)
 
         if self.show_fps:
             fps_text = f"FPS: {self.clock.get_fps()}"
@@ -191,6 +196,7 @@ class AppWindows(App):
         frame_tex2 = self.surf_to_texture(self.UI_display)
         frame_tex3 = self.surf_to_texture(self.buttons_display)
         frame_tex4 = self.surf_to_texture(self.shadow_display)
+        frame_tex5 = self.surf_to_texture(self.app_shadow_display)
 
         frame_tex1.use(1)
         self.program['backgroundTex'] = 1
@@ -200,6 +206,8 @@ class AppWindows(App):
         self.program['buttonsTex'] = 3
         frame_tex4.use(4)
         self.program['shadowTex'] = 4
+        frame_tex5.use(5)
+        self.program['appShadowTex'] = 5
         self.program['backgroundColor'] = (
             s.COLORS['background'][0] / 255,
             s.COLORS['background'][1] / 255,
@@ -218,6 +226,7 @@ class AppWindows(App):
         frame_tex2.release()
         frame_tex3.release()
         frame_tex4.release()
+        frame_tex5.release()
 
         self.dt = self.clock.tick(self.fps)  # Get delta time based on FPS
         # -*-*-              -*-*-
