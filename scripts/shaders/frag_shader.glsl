@@ -57,7 +57,7 @@ vec4 blur(sampler2D sp, vec2 U, vec2 scale, int samples, int LOD) {
     }
 
     // Mixing pixel with 15% of white color
-    O = mix(O, vec4(1.0, 1.0, 1.0, 1.0), 0.05);
+    O = mix(O, vec4(.5), 0.05);
 
     return O / O.a;
 }

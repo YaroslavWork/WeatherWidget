@@ -140,17 +140,19 @@ class AppWindows(App):
                 if event.button == 1:  # left click
                     self.left_click_pressed = True
                     self.field.update_wallpaper()
-                    self.is_windowless = not self.is_windowless
-                    if self.is_windowless:
-                        self.screen = pygame.display.set_mode(self.size, pygame.NOFRAME | pygame.OPENGL | pygame.DOUBLEBUF)
-                    else:
-                        self.screen = pygame.display.set_mode(self.size, pygame.OPENGL | pygame.DOUBLEBUF)
+                    self.field.click_down()
+                    # self.is_windowless = not self.is_windowless
+                    # if self.is_windowless:
+                    #     self.screen = pygame.display.set_mode(self.size, pygame.NOFRAME | pygame.OPENGL | pygame.DOUBLEBUF)
+                    # else:
+                    #     self.screen = pygame.display.set_mode(self.size, pygame.OPENGL | pygame.DOUBLEBUF)
                 elif event.button == 3:  # right click...
                     NotImplementedError("Right click is not implemented yet")
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     self.left_click_pressed = False
                     self.left_click_pressed_time = 0
+                    self.field.click_up()
 
             if event.type == pygame.KEYDOWN:  # If key button down...
                 if event.key == pygame.K_SPACE:
@@ -165,7 +167,7 @@ class AppWindows(App):
 
         # -*-*- Physics Block -*-*-
         self.screen_pos_in_windows()
-        self.field.update()
+        self.field.update(self.dt, self.mouse_pos)
         if self.left_click_pressed:
             self.left_click_pressed_time += self.dt
         if self.mouse_outside:
@@ -274,7 +276,7 @@ class AppLinux(App):
         # -*-*-             -*-*-
 
         # -*-*- Physics Block -*-*-
-        self.field.update()
+        self.field.update(self.dt)
         # -*-*-               -*-*-
 
         # -*-*- Rendering Block -*-*-
