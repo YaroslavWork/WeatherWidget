@@ -36,8 +36,9 @@ class SideButton:
             self.last_click_time = 0
 
     def click_up(self) -> None:
-        self.is_clicked = False
-        self.last_click_time = 0
+        if self.is_clicked:  # If the button was clicked
+            self.last_click_time = 0
+            self.is_clicked = False
 
     def do_function(self, function: callable) -> None:
         if self.is_hover:
