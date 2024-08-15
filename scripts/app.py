@@ -176,17 +176,17 @@ class AppWindows(App):
 
         # -*-*- Rendering Block -*-*-
         self.background_display.fill(self.colors['background'])  # Fill background
-        self.UI_display.fill((0, 0, 0, 0))
-        self.buttons_display.fill((0, 0, 0, 0))
-        self.shadow_display.fill((0, 0, 0, 0))
-        self.app_shadow_display.fill((0, 0, 0, 0))
+        self.UI_display.fill([0, 0, 0, 0])
+        self.buttons_display.fill([0, 0, 0, 0])
+        self.shadow_display.fill([0, 0, 0, 0])
+        self.app_shadow_display.fill([0, 0, 0, 0])
 
         self.field.draw_wallpaper(self.background_display, self.screen_pos, self.is_windowless)
         self.field.draw(self.UI_display, self.shadow_display)
         self.field.button_draw(self.buttons_display)
 
-        pygame.draw.line(self.app_shadow_display, (0, 0, 0), [self.width*0.025, self.height*0.96], [self.width*0.985, self.height*0.96], 3)
-        pygame.draw.line(self.app_shadow_display, (0, 0, 0), [self.width*0.985, self.height*0.96], [self.width*0.985, self.height*0.065], 3)
+        pygame.draw.line(self.app_shadow_display, [0, 0, 0], [self.width*0.025, self.height*0.96], [self.width*0.985, self.height*0.96], 3)
+        pygame.draw.line(self.app_shadow_display, [0, 0, 0], [self.width*0.985, self.height*0.96], [self.width*0.985, self.height*0.065], 3)
 
         if self.show_fps:
             fps_text = f"FPS: {self.clock.get_fps()}"
@@ -276,12 +276,12 @@ class AppLinux(App):
         # -*-*-             -*-*-
 
         # -*-*- Physics Block -*-*-
-        self.field.update(self.dt)
+        self.field.update(self.dt, self.mouse_pos)
         # -*-*-               -*-*-
 
         # -*-*- Rendering Block -*-*-
         self.screen.fill(self.colors['background'])  # Fill background
-        self.field.draw(self.screen)
+        self.field.draw(self.screen, self.screen)
         self.field.button_draw(self.screen)
 
         if self.show_fps:

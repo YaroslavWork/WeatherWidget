@@ -10,6 +10,7 @@ from scripts.settings import SIZE
 import ctypes
 import os
 
+
 def get_wallpaper_path() -> str:
     if os.name == "nt":  # If we are not on Windows, we can't get the path to the wallpaper
         SPI_GETDESKWALLPAPER = 0x0073
@@ -37,12 +38,13 @@ def get_wallpaper_path() -> str:
 
     return ""  # If the OS is neither Windows nor macOS or in case of an error
 
-def get_display_size():
+
+def get_display_size() -> tuple[int, int]:
     """
     This function returns the size of the display (width, height)
     """
     if os.name == "nt":  # Windows
-        return (ctypes.windll.user32.GetSystemMetrics(0), ctypes.windll.user32.GetSystemMetrics(1))
+        return ctypes.windll.user32.GetSystemMetrics(0), ctypes.windll.user32.GetSystemMetrics(1)
     elif os.name == "posix":  # macOS (i ewentualnie Linux)
         try:
             if subprocess.run(['uname'], capture_output=True, text=True).stdout.strip() == "Darwin":
@@ -50,11 +52,11 @@ def get_display_size():
                 main_monitor = Quartz.CGDisplayBounds(Quartz.CGMainDisplayID())
                 width = int(main_monitor.size.width)
                 height = int(main_monitor.size.height)
-                return (width, height)
+                return width, height
         except Exception as e:
-            return f"Error retrieving display size on macOS: {e}"
+            raise Exception(f"Error retrieving display size on macOS: {e}")
 
-    return (0, 0)  # If the OS is neither Windows nor macOS or in case of an error
+    return 0, 0  # If the OS is neither Windows nor macOS or in case of an error
 
 
 class Field:
@@ -91,24 +93,22 @@ class Field:
 
         try:
             wallpaper = self.wallpaper.subsurface(pygame.Rect(pos_x, pos_y, wallpaper_width, wallpaper_height))
-            wallpaper = pygame.transform.scale(wallpaper, (window_width, window_height))
+            wallpaper = pygame.transform.scale(wallpaper, [window_width, window_height])
         except ValueError:
-            wallpaper = pygame.transform.scale(self.wallpaper, (window_width, window_height))
+            wallpaper = pygame.transform.scale(self.wallpaper, [window_width, window_height])
 
-        screen.blit(wallpaper, (0, 0))  # Draw wallpaper on screen
-        #pygame.draw.rect(screen, (0, 0, 0), (0, 0, SIZE[0], SIZE[1]), 4)
-
+        screen.blit(wallpaper, [0, 0])  # Draw wallpaper on screen
+        # pygame.draw.rect(screen, (0, 0, 0), (0, 0, SIZE[0], SIZE[1]), 4)
 
     def draw(self, screen: pygame.Surface, shadow_screen: pygame.Surface) -> None:
-        pygame.draw.circle(screen, (255, 230, 0), (SIZE[0]*0.28, SIZE[1] // 2), 50)
-        Text("18°C", (0, 0, 0), 100).print(shadow_screen, (SIZE[0] * 0.66 + 3, SIZE[1] // 2 + 9), center=True)
-        Text("18°C", (255, 255, 255), 100).print(screen, (SIZE[0]*0.66, SIZE[1] // 2 + 8), center=True)
+        pygame.draw.circle(screen, [255, 230, 0], [SIZE[0] * 0.28, SIZE[1] // 2], 50)
+        Text("18°C", [0, 0, 0], 100).print(shadow_screen, [SIZE[0] * 0.66 + 3, SIZE[1] // 2 + 9], center=True)
+        Text("18°C", [255, 255, 255], 100).print(screen, [SIZE[0] * 0.66, SIZE[1] // 2 + 8], center=True)
 
-    def button_draw(self, screen: pygame.Surface):
-        self.left_button.draw(screen, (255, 255, 255))
-        self.right_button.draw(screen, (255, 255, 255))
-        self.bottom_button.draw(screen, (255, 255, 255))
-
+    def button_draw(self, screen: pygame.Surface) -> None:
+        self.left_button.draw(screen, [255, 255, 255])
+        self.right_button.draw(screen, [255, 255, 255])
+        self.bottom_button.draw(screen, [255, 255, 255])
 
     def update(self, dt, mouse_pos) -> None:
         self.left_button.update(dt, mouse_pos)
