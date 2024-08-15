@@ -46,7 +46,7 @@ class SideButton:
 
     def draw(self, screen: pygame.Surface, color: list[int, int, int]):
         for i in range(len(self.button)):
-            pygame.draw.line(screen, color, self.button[i][0], self.button[i][1], 6)
+            pygame.draw.line(screen, color, list(self.button[i][0]), list(self.button[i][1]), 6)
 
     def update(self, dt, mouse_pos):
         positions_x: tuple = self.button[0][0][0], self.button[0][1][0], self.button[1][0][0], self.button[1][1][0]
