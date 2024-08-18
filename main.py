@@ -6,9 +6,9 @@ from scripts.app import AppWindows, AppLinux
 
 if __name__ == "__main__":
     app = None
-    if os.name != "nt":  # Windows
+    if os.name == "nt":  # Windows
         app = AppWindows()
-    elif os.name != "posix":  # Linux (and potentially macOS)
+    elif os.name == "posix":  # Linux (and potentially macOS)
         app = AppLinux()
 
     while True:

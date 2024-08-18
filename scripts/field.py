@@ -10,6 +10,9 @@ from scripts.settings import SIZE
 import ctypes
 import os
 
+from scripts.widgets.weather_widget import WeatherWidget
+from scripts.widgets.widget import ANIMATION
+
 
 def get_wallpaper_path() -> str:
     if os.name == "nt":  # If we are not on Windows, we can't get the path to the wallpaper
@@ -72,6 +75,9 @@ class Field:
         self.bottom_button = SideButton(90, 80, 30, (SIZE[0] // 2, SIZE[1] * 0.85))
         self.bottom_button.create(80)
 
+        self.widgets = [WeatherWidget("Weather", [0, 0]), WeatherWidget("Weather", [500, 0])]
+        self.active_widget = 0
+
     def update_wallpaper(self) -> None:
         if os.name == "nt":
             self.wallpaper = pygame.image.load(get_wallpaper_path())
@@ -100,27 +106,41 @@ class Field:
         screen.blit(wallpaper, [0, 0])  # Draw wallpaper on screen
         # pygame.draw.rect(screen, (0, 0, 0), (0, 0, SIZE[0], SIZE[1]), 4)
 
+    def change_widget(self, is_left: bool) -> None:
+        if is_left:
+            next_widget = (self.active_widget + 1) % len(self.widgets)
+            self.widgets[self.active_widget].start_animation(750, ANIMATION.OUTSIDE_TO_LEFT, start_after=0)
+            self.widgets[next_widget].start_animation(750, ANIMATION.INSIDE_FROM_RIGHT, start_after=300)
+        else:
+            next_widget = (self.active_widget - 1) % len(self.widgets)
+            self.widgets[self.active_widget].start_animation(750, ANIMATION.OUTSIDE_TO_RIGHT, start_after=0)
+            self.widgets[next_widget].start_animation(750, ANIMATION.INSIDE_FROM_LEFT, start_after=300)
+
+        self.active_widget = next_widget
+
     def draw(self, screen: pygame.Surface, shadow_screen: pygame.Surface) -> None:
-        pygame.draw.circle(screen, [255, 230, 0], [SIZE[0] * 0.28, SIZE[1] // 2], 50)
-        Text("18°C", [0, 0, 0], 100).print(shadow_screen, [SIZE[0] * 0.66 + 3, SIZE[1] // 2 + 9], center=True)
-        Text("18°C", [255, 255, 255], 100).print(screen, [SIZE[0] * 0.66, SIZE[1] // 2 + 8], center=True)
+        for widget in self.widgets:
+            widget.draw(screen, shadow_screen)
 
     def button_draw(self, screen: pygame.Surface) -> None:
         self.left_button.draw(screen, [255, 255, 255])
         self.right_button.draw(screen, [255, 255, 255])
         self.bottom_button.draw(screen, [255, 255, 255])
 
-    def update(self, dt, mouse_pos) -> None:
-        self.left_button.update(dt, mouse_pos)
-        self.right_button.update(dt, mouse_pos)
-        self.bottom_button.update(dt, mouse_pos)
+    def update(self, dt) -> None:
+        self.left_button.update(dt)
+        self.right_button.update(dt)
+        self.bottom_button.update(dt)
 
-    def click_down(self) -> None:
-        self.left_button.click_down()
-        self.right_button.click_down()
-        self.bottom_button.click_down()
+        for widget in self.widgets:
+            widget.update(dt)
 
-    def click_up(self) -> None:
-        self.left_button.click_up()
-        self.right_button.click_up()
-        self.bottom_button.click_up()
+    def click_down(self, mouse_pos) -> None:
+        self.left_button.click_down(mouse_pos)
+        self.right_button.click_down(mouse_pos)
+        self.bottom_button.click_down(mouse_pos)
+
+    def click_up(self, mouse_pos) -> None:
+        self.left_button.click_up(mouse_pos, lambda : self.change_widget(is_left=True))
+        self.right_button.click_up(mouse_pos, lambda : self.change_widget(is_left=False))
+        self.bottom_button.click_up(mouse_pos, lambda : None)

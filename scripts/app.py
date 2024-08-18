@@ -78,7 +78,7 @@ class App:
                 if event.button == 1:  # left click
                     self.left_click_pressed = True
                     self.field.update_wallpaper()
-                    self.field.click_down()
+                    self.field.click_down(self.mouse_pos)
                     # self.is_windowless = not self.is_windowless
                     # if self.is_windowless:
                     #     self.screen = pygame.display.set_mode(self.size, pygame.NOFRAME | pygame.OPENGL | pygame.DOUBLEBUF)
@@ -90,7 +90,7 @@ class App:
                 if event.button == 1:
                     self.left_click_pressed = False
                     self.left_click_pressed_time = 0
-                    self.field.click_up()
+                    self.field.click_up(self.mouse_pos)
 
             if event.type == pygame.KEYDOWN:  # If key button down...
                 if event.key == pygame.K_SPACE:
@@ -103,7 +103,7 @@ class App:
             NotImplementedError("This button is not implemented yet")
 
     def physics(self):
-        self.field.update(self.dt, self.mouse_pos)
+        self.field.update(self.dt)
         if self.left_click_pressed:
             self.left_click_pressed_time += self.dt
         if self.mouse_outside:
@@ -148,14 +148,19 @@ class AppWindows(App):
         ]))
 
         vert_shader = open(f'{sys.path[0]}/scripts/shaders/vert_shader.glsl', 'r').read()
-        frag_shader = open(f'{sys.path[0]}/scripts/shaders/frag_shader.glsl', 'r').read()
+        first_frag_shader = open(f'{sys.path[0]}/scripts/shaders/frag_shader.glsl', 'r').read()
+        second_frag_shader = open(f'{sys.path[0]}/scripts/shaders/second_frag_shader.glsl', 'r').read()
 
-        self.program = self.ctx.program(
+        self.first_program = self.ctx.program(
             vertex_shader=vert_shader,
-            fragment_shader=frag_shader
+            fragment_shader=first_frag_shader
+        )
+        self.second_program = self.ctx.program(
+            vertex_shader=vert_shader,
+            fragment_shader=second_frag_shader
         )
         self.render_object = self.ctx.vertex_array(
-            self.program,
+            self.first_program,
             [(self.quad_buffer, '2f 2f', 'vert', 'texcoord')]
         )
 
@@ -219,26 +224,37 @@ class AppWindows(App):
             'appShadowTex': self.surf_to_texture(self.app_shadow_display)
         }
 
+        # First shader
         for i, (key, value) in enumerate(self.frames.items()):
             value.use(i+1)
-            self.program[key] = i+1
+            self.first_program[key] = i + 1
 
-        self.program['backgroundColor'] = (
+        self.first_program['backgroundColor'] = (
             s.COLORS['background'][0] / 255,
             s.COLORS['background'][1] / 255,
             s.COLORS['background'][2] / 255
         )
-        self.program['resolution'] = (self.width, self.height)
-        self.program['mousePos'] = self.mouse_pos_ratio
-        self.program['mouseOutsideTime'] = self.mouse_outside_time / 1000
+        self.first_program['resolution'] = (self.width, self.height)
+        self.first_program['mousePos'] = self.mouse_pos_ratio
+        self.first_program['mouseOutsideTime'] = self.mouse_outside_time / 1000
 
         self.render_object.render(moderngl.TRIANGLE_STRIP)
+
+        self.frame2_tex1 = self.surf_to_texture(self.UI_display)
+        self.frame2_tex1.use(0)
+        self.second_program['uiTex'] = 0
+
+
+        # Second shader
+
 
     def refresh(self):
         pygame.display.flip()  # Update screen
 
         for value in self.frames.values():
             value.release()
+
+        self.frame2_tex1.release()
 
         super().refresh()
 

@@ -28,6 +28,17 @@ float gaussian(vec2 i) {
     return exp( -.5* dot(i/=sigma,i) ) / ( 6.28 * sigma*sigma );
 }
 
+float smoothTransition(float value, float alpha) {
+    // Smooth transition from 0 to 1 between 0.15 and 0.3
+    float lowerTransition = smoothstep(0.05, 0.2, value);
+
+    // Smooth transition from 1 to 0 between 0.7 and 0.85
+    float upperTransition = smoothstep(0.95, 0.8, value);
+
+    // Combine the two transitions
+    return lowerTransition * upperTransition * alpha;
+}
+
 vec4 blur(sampler2D sp, vec2 U, vec2 scale, int samples, int LOD) {
     int sLOD = 1 << LOD;
     vec4 O = vec4(0);
@@ -99,8 +110,14 @@ void main() {
 
     vec4 color4 = blur2(shadowTex, uvs, 0.006, 5);
     color4.a = 0.25 * color4.a;
+    // x value as a smooth transition
     vec4 color5 = texture(appShadowTex, uvs);
     color5.a = 0.05 * color5.a;
+
+    //color2.a = smoothTransition(uvs.x)
+    color2.a = smoothTransition(uvs.x, color2.a);
+    color4.a = smoothTransition(uvs.x, color4.a);
+
 
     // Layering textures with alpha blending
     color = mix(color1, color4, color4.a);
@@ -108,6 +125,8 @@ void main() {
     color = mix(color, color2, color2.a);
     color = mix(color, color3, color3.a);
     color = mix(color, color5, color5.a);
+
+
 
     // Adding background color
     color = mix(color, vec4(backgroundColor, 1.0), 1.0 - color1.a);
