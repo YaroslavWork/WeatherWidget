@@ -1,15 +1,7 @@
 import ctypes
 import math
-import os
 import sys
-
-from scripts.animations import timing_functions
-
-try:
-    if os.name == "nt":
-        import moderngl
-except ImportError:
-    raise ImportError("Впиши 'pip install moderngl' в консоль")
+import moderngl
 import pygame
 import array
 
@@ -137,6 +129,7 @@ class AppWindows(App):
         self.ctx = moderngl.create_context()
 
         self.frames = {}
+        self.screen_pos: tuple[int, int] = (0, 0)
 
         # Set shader variables
         self.quad_buffer = self.ctx.buffer(array.array('f', [
@@ -209,8 +202,8 @@ class AppWindows(App):
                          [self.width * 0.985, self.height * 0.065], 3)
 
         if self.show_fps:
-            fps_text = f"FPS: {self.clock.get_fps()}"
-            Text(fps_text, [0, 0, 0], 20).print(self.UI_display, [self.width - 70, self.height - 21],
+            fps_text = f"FPS: {int(self.clock.get_fps())}"
+            Text(fps_text, [0, 0, 0], 20).print(self.UI_display, [self.width-130, self.height - 21],
                                                 False)  # FPS counter
 
     def shaders(self):
