@@ -61,13 +61,13 @@ class SideButton:
             if self.last_click_time >= SideButton.animation_duration:
                 self.create(self.center_diff-SideButton.animation_diff)
             else:
-                self.create(timing_functions.ease_out_animation(self.center_diff,
-                                                                self.center_diff-SideButton.animation_diff,
-                                                                self.last_click_time/SideButton.animation_duration))
+                self.create(timing_functions.ease_out(self.center_diff,
+                                                      self.center_diff - SideButton.animation_diff,
+                                                      self.last_click_time / SideButton.animation_duration))
         else:
             if self.last_click_time >= SideButton.animation_duration:
                 self.create(self.center_diff)
             else:
-                self.create(timing_functions.ease_out_animation(self.center_diff-SideButton.animation_diff,
-                                                                self.center_diff,
-                                                                self.last_click_time/SideButton.animation_duration))
+                self.create(timing_functions.ease_out(self.center_diff - SideButton.animation_diff,
+                                                      self.center_diff,
+                                                      self.last_click_time / SideButton.animation_duration))

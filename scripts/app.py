@@ -75,8 +75,9 @@ class App:
             if event.type == pygame.MOUSEBUTTONDOWN:  # If mouse button down...
                 if event.button == 1:  # left click
                     self.left_click_pressed = True
-                    self.field.update_wallpaper()
                     self.field.click_down(self.mouse_pos)
+                elif event.button == 2:  # middle click
+                    self.field.update_wallpaper()
                 elif event.button == 3:  # right click
                     NotImplementedError("Right click is not implemented yet")
             if event.type == pygame.MOUSEBUTTONUP:  # If mouse button up...
