@@ -17,10 +17,10 @@ from scripts.widgets.widget import ANIMATION
 def get_wallpaper_path() -> str:
     if os.name == "nt":  # If we are not on Windows, we can't get the path to the wallpaper
         SPI_GETDESKWALLPAPER = 0x0073
-        buffer = ctypes.create_unicode_buffer(260)  # Maksymalna długość ścieżki to 260 znaków
+        buffer = ctypes.create_unicode_buffer(260)  # Maximum length of the path is 260 characters
         ctypes.windll.user32.SystemParametersInfoW(SPI_GETDESKWALLPAPER, len(buffer), buffer, 0)
         return buffer.value
-    elif os.name == "posix":  # macOS (i ewentualnie Linux)
+    elif os.name == "posix":  # macOS (eventually Linux)
         try:
             if subprocess.run(['uname'], capture_output=True, text=True).stdout.strip() == "Darwin":
                 script = """
@@ -48,7 +48,7 @@ def get_display_size() -> tuple[int, int]:
     """
     if os.name == "nt":  # Windows
         return ctypes.windll.user32.GetSystemMetrics(0), ctypes.windll.user32.GetSystemMetrics(1)
-    elif os.name == "posix":  # macOS (i ewentualnie Linux)
+    elif os.name == "posix":  # macOS (eventually Linux)
         try:
             if subprocess.run(['uname'], capture_output=True, text=True).stdout.strip() == "Darwin":
                 import Quartz
@@ -64,7 +64,7 @@ def get_display_size() -> tuple[int, int]:
 
 class Field:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.wallpaper = None
         self.update_wallpaper()
 
@@ -104,7 +104,6 @@ class Field:
             wallpaper = pygame.transform.scale(self.wallpaper, [window_width, window_height])
 
         screen.blit(wallpaper, [0, 0])  # Draw wallpaper on screen
-        # pygame.draw.rect(screen, (0, 0, 0), (0, 0, SIZE[0], SIZE[1]), 4)
 
     def change_widget(self, is_left: bool) -> None:
         if is_left:
@@ -141,6 +140,6 @@ class Field:
         self.bottom_button.click_down(mouse_pos)
 
     def click_up(self, mouse_pos) -> None:
-        self.left_button.click_up(mouse_pos, lambda : self.change_widget(is_left=True))
-        self.right_button.click_up(mouse_pos, lambda : self.change_widget(is_left=False))
-        self.bottom_button.click_up(mouse_pos, lambda : None)
+        self.left_button.click_up(mouse_pos, lambda: self.change_widget(is_left=True))
+        self.right_button.click_up(mouse_pos, lambda: self.change_widget(is_left=False))
+        self.bottom_button.click_up(mouse_pos, lambda: None)

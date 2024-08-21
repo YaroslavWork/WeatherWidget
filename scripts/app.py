@@ -1,15 +1,7 @@
 import ctypes
 import math
-import os
 import sys
-
-from scripts.animations import timing_functions
-
-try:
-    if os.name == "nt":
-        import moderngl
-except ImportError:
-    raise ImportError("Впиши 'pip install moderngl' в консоль")
+import moderngl
 import pygame
 import array
 
@@ -19,6 +11,9 @@ from scripts.UI.text import Text
 
 
 class RECT(ctypes.Structure):
+    """
+    This class made for storing the position of the window on the screen
+    """
     _fields_ = [
         ('left', ctypes.c_long),
         ('top', ctypes.c_long),
@@ -28,15 +23,18 @@ class RECT(ctypes.Structure):
 
 
 class App:
+    """
+    This is the main class of the program.
+    """
 
     def __init__(self) -> None:
         # Initialize pygame and settings
         pygame.init()
 
-        self.size = self.width, self.height = s.SIZE
-        self.name: str = s.NAME
-        self.colors: dict = s.COLORS
-        self.fps: int = s.FPS
+        self.size = self.width, self.height = s.SIZE  # Screen size
+        self.name: str = s.NAME  # App name
+        self.colors: dict = s.COLORS  # App colors
+        self.fps: int = s.FPS  # FPS counter
 
         # Set pygame window
         pygame.display.set_caption(self.name)
@@ -45,26 +43,26 @@ class App:
         self.clock: pygame.time.Clock = pygame.time.Clock()
 
         # Set input variables
-        self.dt: int = 0
-        self.mouse_pos: tuple[int, int] = (0, 0)
-        self.mouse_pos_ratio: tuple[float, float] = (0, 0)
-        self.keys: list = []
-        self.is_windowless: bool = True
-        self.left_click_pressed: bool = False
-        self.left_click_pressed_time: int = 0
-        self.mouse_outside: bool = False
-        self.mouse_outside_time: int = 0
+        self.dt: int = 0  # Delta time (diff between two frames)
+        self.mouse_pos: tuple[int, int] = (0, 0)  # Mouse position (x, y)
+        self.mouse_pos_ratio: tuple[float, float] = (0, 0)  # Mouse position divided by width and height
+        self.keys: list = []  # All keys (active and unactive)
+        self.is_windowless: bool = True  # Does the app have borders?
+        self.left_click_pressed: bool = False  # Does user press LCM?
+        self.left_click_pressed_time: int = 0  # How long user pressed button? (in ms)
+        self.mouse_outside: bool = False  # Does mouse outside app?
+        self.mouse_outside_time: int = 0  # How long mouse outside app?
 
-        self.show_fps: bool = False
+        self.show_fps: bool = False  # Does fps visible in app?
 
-        # This line takes data from save file
-        self.field: Field = Field()
+        self.field: Field = Field()  # Main app playground
 
-    def input(self):
-        self.mouse_pos = pygame.mouse.get_pos()  # Get mouse position
+    def input(self) -> None:
+        # Get mouse position
+        self.mouse_pos = pygame.mouse.get_pos()
         self.mouse_pos_ratio = (self.mouse_pos[0] / self.width, self.mouse_pos[1] / self.height)
         if self.mouse_pos_ratio[0] <= 0 or self.mouse_pos_ratio[0] >= 0.997 or \
-                self.mouse_pos_ratio[1] <= 0 or self.mouse_pos_ratio[1] >= 0.992:
+                self.mouse_pos_ratio[1] <= 0 or self.mouse_pos_ratio[1] >= 0.992:  # If cursor so close to border
             self.mouse_outside = True
         else:
             self.mouse_outside = False
@@ -72,50 +70,48 @@ class App:
 
         for event in pygame.event.get():  # Get all events
             if event.type == pygame.QUIT:  # If you want to close the program...
-                close()
+                close()  # Closing...
 
             if event.type == pygame.MOUSEBUTTONDOWN:  # If mouse button down...
                 if event.button == 1:  # left click
                     self.left_click_pressed = True
-                    self.field.update_wallpaper()
                     self.field.click_down(self.mouse_pos)
-                    # self.is_windowless = not self.is_windowless
-                    # if self.is_windowless:
-                    #     self.screen = pygame.display.set_mode(self.size, pygame.NOFRAME | pygame.OPENGL | pygame.DOUBLEBUF)
-                    # else:
-                    #     self.screen = pygame.display.set_mode(self.size, pygame.OPENGL | pygame.DOUBLEBUF)
-                elif event.button == 3:  # right click...
+                elif event.button == 2:  # middle click
+                    self.field.update_wallpaper()
+                elif event.button == 3:  # right click
                     NotImplementedError("Right click is not implemented yet")
-            if event.type == pygame.MOUSEBUTTONUP:
+            if event.type == pygame.MOUSEBUTTONUP:  # If mouse button up...
                 if event.button == 1:
                     self.left_click_pressed = False
                     self.left_click_pressed_time = 0
                     self.field.click_up(self.mouse_pos)
 
             if event.type == pygame.KEYDOWN:  # If key button down...
-                if event.key == pygame.K_SPACE:
-                    close()
-                if event.key == pygame.K_f:
-                    self.show_fps = not self.show_fps
+                if event.key == pygame.K_SPACE:  # [Space]
+                    close()  # Closing...
+                if event.key == pygame.K_f:  # [F]
+                    self.show_fps = not self.show_fps  # Switch fps shower
 
         self.keys = pygame.key.get_pressed()  # Get all keys (pressed or not)
         if self.keys[pygame.K_LEFT] or self.keys[pygame.K_a]:  # If left arrow or 'a' is pressed...
             NotImplementedError("This button is not implemented yet")
 
-    def physics(self):
-        self.field.update(self.dt)
+    def physics(self) -> None:
+        self.field.update(self.dt)  # Update playground
+
+        # Counting time for events
         if self.left_click_pressed:
             self.left_click_pressed_time += self.dt
         if self.mouse_outside:
             self.mouse_outside_time += self.dt
 
-    def rendering(self):
+    def rendering(self) -> None:
         pass
 
-    def shaders(self):
+    def shaders(self) -> None:
         pass
 
-    def refresh(self):
+    def refresh(self) -> None:
         self.dt = self.clock.tick(self.fps)  # Get delta time based on FPS
 
     def update(self) -> None:
@@ -123,20 +119,33 @@ class App:
 
 
 class AppWindows(App):
+    """
+    This class is for Windows users
+    """
 
     def __init__(self) -> None:
         super().__init__()
 
-        # Set moderngl context
-        self.screen = pygame.display.set_mode(self.size, pygame.OPENGL | pygame.DOUBLEBUF | pygame.NOFRAME)
-        self.background_display = pygame.Surface(self.size, pygame.SRCALPHA)
-        self.UI_display = pygame.Surface(self.size, pygame.SRCALPHA)
-        self.shadow_display = pygame.Surface(self.size, pygame.SRCALPHA)
-        self.buttons_display = pygame.Surface(self.size, pygame.SRCALPHA)
-        self.app_shadow_display = pygame.Surface(self.size, pygame.SRCALPHA)
-        self.ctx = moderngl.create_context()
+        # Set moderngl context (all pygame surfaces)
 
-        self.frames = {}
+        # For all screens (not drawing)
+        self.screen: pygame.Surface = pygame.display.set_mode(self.size, pygame.OPENGL | pygame.DOUBLEBUF |
+                                                              pygame.NOFRAME)
+        # For background (wallpaper)
+        self.background_display: pygame.Surface = pygame.Surface(self.size, pygame.SRCALPHA)
+        # For UI (widgets)
+        self.UI_display: pygame.Surface = pygame.Surface(self.size, pygame.SRCALPHA)
+        # For shadow (text shadow)
+        self.shadow_display: pygame.Surface = pygame.Surface(self.size, pygame.SRCALPHA)
+        # For buttons (side buttons)
+        self.buttons_display: pygame.Surface = pygame.Surface(self.size, pygame.SRCALPHA)
+        # For invisible borders (ex. when widgets change)
+        self.app_shadow_display: pygame.Surface = pygame.Surface(self.size, pygame.SRCALPHA)
+        # For second shader
+        self.ctx: moderngl.Context = moderngl.create_context()
+
+        self.frames: dict = {}  # All frames for shaders
+        self.screen_pos: tuple[int, int] = (0, 0)  # Position of the window on the screen
 
         # Set shader variables
         self.quad_buffer = self.ctx.buffer(array.array('f', [
@@ -147,6 +156,7 @@ class AppWindows(App):
             1.0, -1.0, 1.0, 1.0,  # bottom right
         ]))
 
+        #  Load shaders (relative path)
         vert_shader = open(f'{sys.path[0]}/scripts/shaders/vert_shader.glsl', 'r').read()
         first_frag_shader = open(f'{sys.path[0]}/scripts/shaders/frag_shader.glsl', 'r').read()
         second_frag_shader = open(f'{sys.path[0]}/scripts/shaders/second_frag_shader.glsl', 'r').read()
@@ -209,8 +219,8 @@ class AppWindows(App):
                          [self.width * 0.985, self.height * 0.065], 3)
 
         if self.show_fps:
-            fps_text = f"FPS: {self.clock.get_fps()}"
-            Text(fps_text, [0, 0, 0], 20).print(self.UI_display, [self.width - 70, self.height - 21],
+            fps_text = f"FPS: {int(self.clock.get_fps())}"
+            Text(fps_text, [0, 0, 0], 20).print(self.UI_display, [self.width - 130, self.height - 21],
                                                 False)  # FPS counter
 
     def shaders(self):
@@ -226,7 +236,7 @@ class AppWindows(App):
 
         # First shader
         for i, (key, value) in enumerate(self.frames.items()):
-            value.use(i+1)
+            value.use(i + 1)
             self.first_program[key] = i + 1
 
         self.first_program['backgroundColor'] = (
@@ -240,18 +250,15 @@ class AppWindows(App):
 
         self.render_object.render(moderngl.TRIANGLE_STRIP)
 
+        # Second shader (Not implemented yet)
         self.frame2_tex1 = self.surf_to_texture(self.UI_display)
         self.frame2_tex1.use(0)
         self.second_program['uiTex'] = 0
 
-
-        # Second shader
-
-
     def refresh(self):
         pygame.display.flip()  # Update screen
 
-        for value in self.frames.values():
+        for value in self.frames.values():  # Release all textures (if not, memory leak, computer lagging!!!)
             value.release()
 
         self.frame2_tex1.release()
@@ -272,6 +279,9 @@ class AppWindows(App):
 
 
 class AppLinux(App):
+    """
+    This class is for Linux (and potentially macOS) users
+    """
 
     def __init__(self) -> None:
         super().__init__()
